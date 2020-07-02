@@ -1,0 +1,311 @@
+---
+title: "Machine Learning Final Project - Predicting Song Success"
+date: "December 11, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, cache = TRUE)
+```
+
+## Contributers : 
+* Anna Zagoren : azagoren@wesleyan.edu
+* Erin Rose : erose@wesleyan.edu
+* Emily Leff : eleff@wesleyan.edu
+
+
+### **Problem Statement**
+
+The way we listen to music has radically changed over the past five years with the emergence of streaming platforms and social media, providing the average listener with access to more content at a lower cost more than ever. With this increase in music availability and a shift in traditional listening methods, this project seeks to determine the qualities of songs that have historically been commercially successful to see if popular songs over time have shared specific characteristics that have contributed to their success. The goal of a model could be used by artists and music industry marketers to help boost the potential of commercial success for their music, using it to make decisions such as which songs of an artist would be more successful released as a single or within an album. The measure of success used for our project is if the song achieved a ranking on the Billboard Hot 100 Chart which ranks the top 100 songs of the week based on sales, radio airplay, and streaming activity. In addition to the practical and commercial use of a predictive model for audio features of popular songs, this project seeks to examine the common characteristics of commercially popular music to discover and understand why certain songs are so appealing to wide audiences. While it can be argued that listening to music is a solitary activity (especially when you observe the ubiquity of people using headphones when walking down the street or on public transportation), music is ultimately a shared experience -- widely successful artists have a way of appealing to diverse groups of people and serving as a social unifier. This project not only addresses a business query to understand how to create a commercially successful commodity but also pays due diligence to recognize the social and personal effects of quality songs.
+
+
+### **Data Overview**
+
+The data for this project is a merged dataset from two separate sources: one to account for song audio features and another to account for songs that made the Billboard Hot 100 Chart.
+
+The dataset used to account for song audio features is the Million Song Dataset, available for free and public use online (source: http://millionsongdataset.com/). The Million Song Dataset is a collaborative project between The Echo Nest (a music intelligence platform used by companies such as Spotify, VEVO, MTV, and EMI) and LabROSA (The Laboratory for the Recognition and Organization of Speech and Audio which conducts research into automatic means of extracting useful information from sound), funded by the National Science Foundation. Additionally, the Million Song Dataset includes data from the following complementary datasets:
+
+* SecondHandSongs dataset: cover songs data
+* musiXmatch dataset: lyrics data 
+* Last.fm dataset: song-level tags and similarity data
+* Taste Profile subset: user data
+* thisismyjam-to-MSD mapping: additional user data
+* tagtraum genre annotations: genre labels data
+* Top MAGD dataset: additional genre labels data
+
+The Million Songs Dataset includes the following variables:
+
+* artist_mbid:  the musicbrainz.org ID for the artist
+* artist_mbtags: number of tags artist received on musicbrainz.org
+* artist_mbtags_count: raw tag count of the tags this artist received on musicbrainz.org
+* artist_name: artist name
+* artist_playmeid: the ID of that artist on the service playme.com
+* artist_terms: number of artist’s terms (tags) from The Echo Nest
+* artist_terms_freq: frequency of the terms from The Echo Nest (number between 0 and 1)
+* artist_terms_weight: weight of the 12 terms from The Echo Nest (number between 0 and 1)
+* audio_md5: hash code of the audio used for the analysis by The Echo Nest
+* bars_confidence: confidence value (between 0 and 1) associated with each bar by The Echo Nest
+* bars_start: start time of each bar according to The Echo Nest
+* beats_confidence: confidence value (between 0 and 1) associated with each beat by The Echo Nest
+* beats_start: start time of each beat according to The Echo Nest
+* danceability: danceability measure of this song according to The Echo Nest (between 0 and 1, 0 => not analyzed)
+* duration: duration of the track in seconds
+* end_of_fade_in: time of the end of the fade in, at the beginning of the song, according to The Echo Nest
+* energy: energy measure (not in the signal processing sense) according to The Echo Nest (between 0 and 1, 0 => not analyzed)
+* key: estimation of the key the song is in by The Echo Nest
+* key_confidence: confidence of the key estimation
+* loudness: general loudness of the track
+* mode: estimation of the mode the song is in by The Echo Nest
+* mode_confidence: confidence of the mode estimation
+* release: album name from which the track was taken, some songs / tracks can come from many albums, only one given in that case
+* release_7digitalid: the ID of the release (album) on the service 7digital.com
+* sections_confidence: confidence value (between 0 and 1) associated with each section by The Echo Nest
+* sections_start: start time of each section according to The Echo Nest
+* segments_confidence: confidence value (between 0 and 1) associated with each segment by The Echo Nest
+* segments_loudness_max: max loudness during each segment
+* segments_loudness_max_time: time of the max loudness during each segment
+* segments_loudness_start: loudness at the beginning of each segment
+* segments_pitches: chroma features for each segment (normalized so max is 1.)
+* segments_start: start time of each segment (~ musical event, or onset) according to The Echo Nest
+* segments_timbre: MFCC-like features for each segment
+* similar_artists: a list of 100 artists (their Echo Nest ID) similar to artist according to The Echo Nest
+* song_hotttnesss: according to The Echo Nest, when song was downloaded, the song’s 'hotttnesss' on a scale of 0 and 1
+* song_id: The Echo Nest song ID, note that a song can be associated with many tracks (with very slight audio differences)
+* start_of_fade_out: start time of the fade out, in seconds, at the end of the song, according to The Echo Nest
+* tatums_confidence: confidence value (between 0 and 1) associated with each tatum by The Echo Nest
+* tatums_start: start time of each tatum according to The Echo Nest
+* tempo: tempo in BPM according to The Echo Nest
+* time_signature: time signature of the song according to The Echo Nest, i.e. usual number of beats per bar
+* time_signature_confidence: confidence of the time signature estimation
+* title: song title
+* track_7digitalid: the ID of this song on the service 7digital.com
+* track_id: The Echo Nest ID of this particular track on which the analysis was done
+* year: year when this song was released, according to musicbrainz.org
+
+For the purpose of this project, rather than using the full million songs as the data source, we used a pre-made 10,000 song subset provided by the Million Songs Dataset website.
+
+The data used to account for songs on the Billboard Hot 100 is the Billboard Hot weekly charts dataset found on data.world (source: https://data.world/kcmillersean/billboard-hot-100-1958-2017). This dataset accounts for every Weekly Hot 100 singles chart between 8/2/1958 and 6/22/2019. Each observation in the dataset accounts for a song and the following variables:
+
+* url: link to song on Billboard Hot 100 website
+* weekid: date (YYYY-MM-DD) of first day of the week the song was on the chart 
+* week_position: position on chart for week
+* song: name of song
+* performer: artist name
+* songid: concatenation of song & performer
+* instance: number of times a songID has appeared on chart after dropping off the chart for at least 1 week
+* previous_week_position: previous chart position for a song for that week
+* peak_position: highest position for a songid for that given week (not the overall highest position)
+* weeks_on_chart: number of weeks on the chart for a songID for that given week (not overall running count of weeks)
+
+
+```{r}
+# csv version of Million Song Subset came from:
+# https://raw.githubusercontent.com/Vatshayan/Song-Classification/master/music.csv
+# which we saved as "music.csv"
+
+msd <- read.csv("music.csv")
+
+# Billboard top 100 data came from:
+# https://data.world/kcmillersean/billboard-hot-100-1958-2017
+# which we saved as "billboard.csv"
+
+billboard <- read.csv("billboard.csv")
+```
+
+
+### **Data Preprocessing**
+
+Because we were combining two data sets, we had a lot of pre-processing to do. First we looked at the billboard data set, because it had fewer variables to retain. In this data set, each song was inputted separately for every instance that it appeared on the charts - so, for example, if a song spent 24 weeks on the charts, it would have 24 entries in the data set. So it became clear that the first step was to collapse these entries together. We did this using the dplyr package; because we only wanted the song and artist name, we only retained these variables to group the entries, and then created a new variable “WeeksOnChart” that was a sum of every singular instance of that song on the chart. This made a new data set we called billboard_agg, that only featured artist name, song name, and weeks on chart. To be able to join this and the million song data subset together, the column names needed to be the same, so we renamed the billboard_agg columns to match. We then did the left_join function to combine data sets along song and artist name, which allowed all the million song data set variables to be retained, only adding the weeksonchart variable in the merge. Then to be sure that everything was properly formatted, we made title and artist.name factors (they were coerced into characters in the left_join), and made all missing data in weeksonchart equal to zero. Then we created the binary variable on_billboard by making an if/else statement with the condition that if weeksonchart is greater than zero, it will code “yes”, and otherwise, it will code “no”. This is the primary outcome variable we use in the development of our models. In most cases, you’d then finish, but given the numerous variables available in our data set we had to do sizable trimming. We looked at the structure of the data set, and eliminated all variables that had either large amounts of missing data (like year) or wouldn’t be meaningful predictors of song success by our judgment (like longitude and latitude). The full list of variables we deleted outright is artist_mbtags, artist_mbtags_count, location, longitude, latitude, song.id, terms, terms_freq, year, and song.hotttnesss. Other variables were important identifying variables, but were also not good predictors; these were eliminated expressly in the code for the models. These variables include artist.id, artist.name, release.id, release.name, title, weeksonchart, and similar. Then as a final measure, we eliminated all missing data - which was only approximately 4 observations coming from the “familiarity” variable - and then created our testing and training data sets. 
+
+```{r}
+library(dplyr)
+
+billboard %>%
+  group_by(Song, Performer)%>%
+  mutate(WeeksonChart=sum(Instance)) -> billboard
+
+billboard_agg <- distinct(billboard, Song, Performer, WeeksonChart)
+
+colnames(billboard_agg) <- c("title", "artist.name", "weeksonchart")
+
+data <- left_join(msd, billboard_agg, by = c("title","artist.name"))
+
+data$artist.name <- factor(data$artist.name)
+data$title <- factor(data$title)
+data[["weeksonchart"]][is.na(data[["weeksonchart"]])] <- 0
+data$on_billboard <- factor(ifelse(data$weeksonchart>0, "yes", "no"))
+
+# Data Removals
+data <- data %>%
+  select(-c(artist_mbtags, artist_mbtags_count, location, longitude,
+            latitude, song.id, terms, terms_freq, year, song.hotttnesss))
+data2 <- na.omit(data)
+
+library(caret)
+set.seed(1234)
+index <- createDataPartition(data2$on_billboard, p=0.85, list=FALSE) 
+train <- data2[index, ]
+test  <- data2[-index, ]
+```
+
+
+### **Machine Learning Approaches**
+
+**Classification Tree:**
+
+This method creates a ‘tree’ comprised of multiple ‘nodes’, acting like branches of the tree, with leaves (outcomes) at the very end. You start at the root of the tree and move down. At each node, there’s a binary rule derived from the variables in your data set, determined by which rule would do the best at splitting your outcome (for example, in a best case scenario all outcome A’s comply with the rule, all outcome B’s don’t). Based on whether your case complies with the rule or contradicts the rule, it will move in a certain direction (left branch/“yes” or right branch/“no”) down the tree until reaching a final ‘leaf’, predicting the outcome for that specific case. This outcome is categorical, in our case a ‘yes’ or ‘no’ for whether or not the case (a song) was on the billboard chart. Because we were using this binary variable and had a lot of variable options, Classification Tree was a very viable method for us.
+
+**Random Forest:**
+
+A Random Forest is a more powerful version of a Classification Tree. It models a bunch of classification trees, then averages them to form the final model, which makes for less error overall. This is done through bagging/bootstrapping - meaning that each tree is made from a different subset of the same data. The final model gives equal weight to each of these independent trees, and the result is similar to them, but has higher accuracy when predicting an outcome. Because classification trees are a great option for predicting our binary outcome, Random Forest is also an excellent option for our data. Our hypothesis was that in using this more advanced technique, we might get a better sensitivity than we got with the classification tree.
+
+**Lasso Regression:**
+
+Lasso regression uses the L1 regularization technique to identify the smallest number of variables with the greatest explanatory power. As a result, the Lasso regression includes a penalty equal to the magnitude of the sum of the coefficients in the model. This makes this modeling technique particularly useful in preventing overfitting within the model, as well as in feature selection. The Lasso regression is very empirically similar the Ridge regression, which we also covered in class, except that it uses magnitudes instead of squares in its analysis. Because of this, it serves as a good proxy for the results we’d get using a ridge regression, which takes longer to run, but has the potential to perform better. It’s important to note that when variables within a model are correlated, the Lasso regression only retains the variable with the greatest explanatory power. Thus, variables which aren’t included in the model may still play an important role in determining outcomes for the data in question. 
+
+**Random forest using SMOTE sampling:**
+
+The data we ended up using to run our tests was unbalanced, with only a 2% success rate (only approximately 200 of the 10,000 observations were “yes” for making it to the Billboard Hot 100). As demonstrated with our initial classification tree, random forest, and lasso regression models, this unbalanced data made it difficult for us to build a model with adequate sensitivity, or ability to accurately identify the successful cases. To account for the fact that the event we were trying to predict was rare, we ran a separate random forest test using SMOTE sampling, or synthetic minority over-sampling technique. SMOTE combines the practice of under-sampling the overrepresented data by selecting a subset of this larger class and over-sampling the underrepresented data by randomly duplicating samples from this smaller class. The SMOTE method allowed for us to run a random forest on more balanced data to achieve a higher sensitivity rate by providing our model with more data of successful cases upon to improve fit.
+
+
+### **Results**
+
+#### Classification Tree:
+```{r}
+# set train control
+trctrl <- trainControl(method="cv", number=10,
+                       summaryFunction=twoClassSummary,
+                       classProbs=TRUE)
+
+# build model
+set.seed(1234)
+ctree_fit <- train(on_billboard ~. -artist.id -artist.name -release.id -release.name -title -weeksonchart -similar, 
+                   data = train, 
+                   method = "rpart",
+                   trControl=trctrl,
+                   metric = "ROC",
+                   tuneLength = 10)
+ctree_fit
+
+# graph classification tree
+library(rattle)
+fancyRpartPlot(ctree_fit$finalModel, tweak=1.4)
+
+# evaluate on test data
+pred <- predict(ctree_fit, test)
+confusionMatrix(pred, test$on_billboard, positive="yes")
+
+```
+
+This classification tree ended up being fairly complex, using 6 variables at the nodes (artist.hotttnesss, familiarity, duration, loudness, tatums_confidence, bars_confidence) to a total of 18 final leaves (outcomes), 5 of which represent 'yes' and 13 of which represent 'no'. Though the accuracy of the model, derived from the testing data, is 0.9773, extremely high, the sensitivity is 0.0333 - meaning that the model only predicted 3% of the songs that made it to the billboard charts. The specificity explains most of the high accuracy, clocking in at 0.9965, meaning that 99.7% of all songs that didn't make the charts, we correctly predicted as such. Because we are trying to predict making it on to the charts, sensitivity is much more important in our data than specificity... it's clear from this classification tree that the rarity of that event makes our models difficult to optimize. But the classification tree is a fairly basic method, so there's a chance to get better results with more advanced models.
+
+#### Random Forest:
+```{r}
+library(randomForest)
+
+# build model
+set.seed(1234)
+fit.forest <- randomForest(on_billboard ~ . -artist.id -artist.name -release.id -release.name -title -weeksonchart -similar,
+                           data=train,
+                           na.action=na.roughfix,
+                           ntree=1000,
+                           importance=TRUE)
+
+fit.forest
+
+# variable importance graph
+varImpPlot(fit.forest, type=2, main="Variable Importance")
+
+# evaluate on test data
+pred <- predict(fit.forest, test)
+# library(caret)
+confusionMatrix(pred, test$on_billboard, positive="yes")
+```
+
+After observing issues with classification tree, we hoped that Random Forest, being a more powerful method, would significantly improve our sensitivity results. Unfortunately, that is not the case. In the Random Forest, we got an accuracy of .9807 - slightly better than the classification tree - but this is because our specificity is 1.000. The model correctly predicted every instance of a song not being on the charts. Our sensitivity, unfortunately, was still stuck at 0.0333; 3% of the songs that charted were correctly predicted as such. Looking at the confusion matrix, this is because the model only actually predicted one song to be a hit, and it was. So even a more powerful method wasn't able to get us significantly better results, again due to the rarity of charting and therefore the rarity of predicting to chart. But a positive consequence of making the Random Forest was that we could make a variable importance graph, that is useful in our final results interpretation. It appears that artist.hotttnesss and familiarity were the two most important variables by a large margin, both measures of artist popularity; in terms of actual musical qualities, loudness and duration were the best predictors.
+
+#### Lasso Regression:
+```{r}
+require(glmnet)
+x <- model.matrix(on_billboard ~ ., train)
+
+# dependent variable
+y <- train$on_billboard
+
+# specify the lamba values to investigate
+grid <- 10^seq(8, -4, length=250)
+
+model.lasso <- glmnet(x, y, family="binomial")
+plot(model.lasso, xvar="lambda", main="Lasso")
+
+# 10-fold cross validation of lambda values on MSE
+set.seed(1234)
+cv.lambda <- cv.glmnet(x, y, family="binomial")
+plot(cv.lambda)
+bestlam <- cv.lambda$lambda.min
+
+# evaluate model on test data 
+x <- model.matrix(on_billboard ~ ., test)
+
+pred <- predict(model.lasso, s=bestlam, newx=x, type="class")
+
+pred <- pred[,1]
+pred <- as.character(pred)
+pred <- factor(pred, levels= c('no', 'yes'))
+actual<- ifelse(test$on_billboard == "yes", "yes", "no")
+actual <- factor(actual, levels= c('no', 'yes'))
+confusionMatrix(actual, pred, positive="yes")
+```
+
+The Lasso regression results we obtained also demonstrate a strong need for methods to balance the data. While we obtained a high accuracy and specificity of 98%, there was no sensitivity to our results. This complete of specificity resulted because this model predicted that none of  the songs in our dataset would make the Billboard charts. This lines up with our exploratory results, as the likelihood of a song making the billboard charts is approximately 2 percent. Thus, by predicting that no songs would chart our model successfully identified when a song wouldn’t chart 98% of the time and was only wrong when the two percent actually did chart. 
+
+#### Random forest using SMOTE sampling:
+```{r}
+library(DMwR)
+
+train <- train %>%
+  select(-c(artist.id, artist.name, release.id, release.name, title, weeksonchart, similar))
+
+test <- test %>%
+  select(-c(artist.id, artist.name, release.id, release.name, title, weeksonchart, similar))
+
+ctr <- trainControl(method = "repeatedcv", 
+                    number = 10, 
+                    repeats = 10, 
+                    verboseIter = FALSE,
+                    sampling = "smote")
+
+set.seed(1234)
+fit <- train(on_billboard ~ .,
+             data = train,
+             method = "rf",
+             preProcess = c("scale", "center"),
+             trControl = ctr)
+
+pred <- predict(fit,  newdata = test)
+
+confusionMatrix(pred, test$on_billboard, positive = "yes")
+postResample(pred = pred,
+             obs = test$on_billboard)
+```
+
+The results from our confusion matrix show that this random forest model using SMOTE sampling to account for unbalanced data has a 92.13% accuracy, 66.67% sensitivity, and 92.65% specificity. This means that of all the cases that were successful in making the Billboard Hot 100, our model accurately identified 66.67% of them, and with the cases that were unsuccessful in doing so, our model identified 92.65%. 
+
+
+### **Discussion**
+
+We found that our random forest model using SMOTE sampling was our best fit compared to our initial random forest model (without SMOTE sampling), the classification tree, and lasso regression due to its significantly higher sensitivity (66.67% versus 3%). The unbalanced data that we were working with made it objectively difficult to solve the problem of accurately identifying audio features of songs that could predict their commercial success. However, this issue is unavoidable for our specific query, given the fact that our data represents the “real world” quite well -- if only 100 songs make the Billboard chart every week, that is an incredibly small subset of every song in existence. 
+
+The variables of importance represented in our initial random forest model “artist hotttnesss” and “familiarity” indicate that a song’s commercial success is highly determined by its artist’s pre-existing success and how familiar listeners are with that artist and sound. This finding suggests that it is very difficult to break into the music industry and become widely popular without prior marketing or success. Additionally, a good song is not merely the sum of its parts (ie. its audio features) -- an artist is most likely to gain commercial success from their song if they have clout, industry connections, and audience appeal, rather than a specific sound profile. 
+
+The rise of social media and music streaming services (which oftentimes are social in nature, such as Spotify’s feature that lets users follow others to observe what their friends are listening to) has drastically shifted the landscape of music marketing to be aggressively personalized to individual listeners. Recommender algorithms and targeted ads have the ability to provide users with suggestions based on demographic information and prior listening patterns. Further research into this topic could address the effect of recommender algorithms and how they operate at the level of the individual user -- for example, do users only listen to new music that is recommended to them specifically (ie. Spotify’s Discover Weekly feature, a personalized weekly playlist based on user listening patterns) and how does that determine overall song popularity? If individuals are increasingly using streaming services that use these individualized recommender systems, how can songs break through to different demographic groups and achieve commercial success? The conclusions from our research give insight into these further questions that should be addressed in the future so that we are able to understand and track the changing landscape of the music industry’s marketplace. 
+
+
+### **References**
+
+* Thierry Bertin-Mahieux, Daniel P.W. Ellis, Brian Whitman, and Paul Lamere. The Million Song Dataset. In Proceedings of the 12th International Society for Music Information Retrieval Conference (ISMIR 2011), 2011.
+* Miller, Sean. “Billboard Hot Weekly Charts - Dataset by Kcmillersean.” Data.world, Data.world Inc, 22 Nov. 2019, https://data.world/kcmillersean/billboard-hot-100-1958-2017.
+* “Music Charts, News, Photos & Video.” Billboard, https://www.billboard.com/.
+
+
+

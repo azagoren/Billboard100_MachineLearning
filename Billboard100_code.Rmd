@@ -1,0 +1,185 @@
+---
+title: "Machine Learning Final Project - Predicting Song Success"
+date: "December 11, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, cache = TRUE)
+```
+
+## Contributers : 
+* Anna Zagoren : azagoren@wesleyan.edu
+* Erin Rose : erose@wesleyan.edu
+* Emily Leff : eleff@wesleyan.edu
+
+### **Importing files **
+```{r}
+# csv version of Million Song Subset came from:
+# https://raw.githubusercontent.com/Vatshayan/Song-Classification/master/music.csv
+# which we saved as "music.csv"
+
+msd <- read.csv("music.csv")
+
+# Billboard top 100 data came from:
+# https://data.world/kcmillersean/billboard-hot-100-1958-2017
+# which we saved as "billboard.csv"
+
+billboard <- read.csv("billboard.csv")
+```
+
+### **Data Preprocessing**
+```{r}
+library(dplyr)
+
+billboard %>%
+  group_by(Song, Performer)%>%
+  mutate(WeeksonChart=sum(Instance)) -> billboard
+
+billboard_agg <- distinct(billboard, Song, Performer, WeeksonChart)
+
+colnames(billboard_agg) <- c("title", "artist.name", "weeksonchart")
+
+data <- left_join(msd, billboard_agg, by = c("title","artist.name"))
+
+data$artist.name <- factor(data$artist.name)
+data$title <- factor(data$title)
+data[["weeksonchart"]][is.na(data[["weeksonchart"]])] <- 0
+data$on_billboard <- factor(ifelse(data$weeksonchart>0, "yes", "no"))
+
+# Data Removals
+data <- data %>%
+  select(-c(artist_mbtags, artist_mbtags_count, location, longitude,
+            latitude, song.id, terms, terms_freq, year, song.hotttnesss))
+data2 <- na.omit(data)
+
+library(caret)
+set.seed(1234)
+index <- createDataPartition(data2$on_billboard, p=0.85, list=FALSE) 
+train <- data2[index, ]
+test  <- data2[-index, ]
+```
+
+### **Machine Learning Approaches**
+
+* Classification Tree:
+* Random Forest:
+* Lasso Regression:
+* Random forest using SMOTE sampling:
+
+### **Results**
+
+#### Classification Tree:
+```{r}
+# set train control
+trctrl <- trainControl(method="cv", number=10,
+                       summaryFunction=twoClassSummary,
+                       classProbs=TRUE)
+
+# build model
+set.seed(1234)
+ctree_fit <- train(on_billboard ~. -artist.id -artist.name -release.id -release.name -title -weeksonchart -similar, 
+                   data = train, 
+                   method = "rpart",
+                   trControl=trctrl,
+                   metric = "ROC",
+                   tuneLength = 10)
+ctree_fit
+
+# graph classification tree
+library(rattle)
+fancyRpartPlot(ctree_fit$finalModel, tweak=1.4)
+
+# evaluate on test data
+pred <- predict(ctree_fit, test)
+confusionMatrix(pred, test$on_billboard, positive="yes")
+
+```
+
+#### Random Forest:
+```{r}
+library(randomForest)
+
+# build model
+set.seed(1234)
+fit.forest <- randomForest(on_billboard ~ . -artist.id -artist.name -release.id -release.name -title -weeksonchart -similar,
+                           data=train,
+                           na.action=na.roughfix,
+                           ntree=1000,
+                           importance=TRUE)
+
+fit.forest
+
+# variable importance graph
+varImpPlot(fit.forest, type=2, main="Variable Importance")
+
+# evaluate on test data
+pred <- predict(fit.forest, test)
+# library(caret)
+confusionMatrix(pred, test$on_billboard, positive="yes")
+```
+
+#### Lasso Regression:
+```{r}
+require(glmnet)
+x <- model.matrix(on_billboard ~ ., train)
+
+# dependent variable
+y <- train$on_billboard
+
+# specify the lamba values to investigate
+grid <- 10^seq(8, -4, length=250)
+
+model.lasso <- glmnet(x, y, family="binomial")
+plot(model.lasso, xvar="lambda", main="Lasso")
+
+# 10-fold cross validation of lambda values on MSE
+set.seed(1234)
+cv.lambda <- cv.glmnet(x, y, family="binomial")
+plot(cv.lambda)
+bestlam <- cv.lambda$lambda.min
+
+# evaluate model on test data 
+x <- model.matrix(on_billboard ~ ., test)
+
+pred <- predict(model.lasso, s=bestlam, newx=x, type="class")
+
+pred <- pred[,1]
+pred <- as.character(pred)
+pred <- factor(pred, levels= c('no', 'yes'))
+actual<- ifelse(test$on_billboard == "yes", "yes", "no")
+actual <- factor(actual, levels= c('no', 'yes'))
+confusionMatrix(actual, pred, positive="yes")
+```
+
+#### Random forest using SMOTE sampling:
+```{r}
+library(DMwR)
+
+train <- train %>%
+  select(-c(artist.id, artist.name, release.id, release.name, title, weeksonchart, similar))
+
+test <- test %>%
+  select(-c(artist.id, artist.name, release.id, release.name, title, weeksonchart, similar))
+
+ctr <- trainControl(method = "repeatedcv", 
+                    number = 10, 
+                    repeats = 10, 
+                    verboseIter = FALSE,
+                    sampling = "smote")
+
+set.seed(1234)
+fit <- train(on_billboard ~ .,
+             data = train,
+             method = "rf",
+             preProcess = c("scale", "center"),
+             trControl = ctr)
+
+pred <- predict(fit,  newdata = test)
+
+confusionMatrix(pred, test$on_billboard, positive = "yes")
+postResample(pred = pred,
+             obs = test$on_billboard)
+```
+
+
