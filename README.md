@@ -1,4 +1,6 @@
 # Billboard 100 Machine Learning Project 
+![alt text](https://github.com/azagoren/Billboard100_MachineLearning/blob/master/bboard.png?raw=true)
+
 
 ## Project Overview
 
