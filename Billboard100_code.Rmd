@@ -122,7 +122,8 @@ confusionMatrix(pred, test$on_billboard, positive="yes")
 #### Lasso Regression:
 ```{r}
 require(glmnet)
-x <- model.matrix(on_billboard ~ ., train)
+x <- model.matrix(on_billboard ~ .-artist.id -artist.name -release.id -release.name -title -weeksonchart -similar,
+                  data=train)
 
 # dependent variable
 y <- train$on_billboard
@@ -134,21 +135,18 @@ model.lasso <- glmnet(x, y, family="binomial")
 plot(model.lasso, xvar="lambda", main="Lasso")
 
 # 10-fold cross validation of lambda values on MSE
-set.seed(1234)
 cv.lambda <- cv.glmnet(x, y, family="binomial")
 plot(cv.lambda)
 bestlam <- cv.lambda$lambda.min
 
 # evaluate model on test data 
-x <- model.matrix(on_billboard ~ ., test)
+x <- model.matrix(on_billboard ~ . -artist.id -artist.name -release.id -release.name -title -weeksonchart -similar, data=test)
 
 pred <- predict(model.lasso, s=bestlam, newx=x, type="class")
 
 pred <- pred[,1]
-pred <- as.character(pred)
-pred <- factor(pred, levels= c('no', 'yes'))
-actual<- ifelse(test$on_billboard == "yes", "yes", "no")
-actual <- factor(actual, levels= c('no', 'yes'))
+pred <- factor(as.character(pred), levels= c('no', 'yes'))
+actual<- factor(ifelse(test$on_billboard == "yes", "yes", "no"), levels = c("no", "yes"))
 confusionMatrix(actual, pred, positive="yes")
 ```
 
