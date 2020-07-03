@@ -15,11 +15,11 @@ While our classification tree was able to correctly predict when a song would no
 
 * **Random Forest:**
 
-The random forest yielded marginally improved specificity and accuracy values of 100% and 98% respectively. Sensitivity within this model however continued to decline, as our random forest predicted that no songs (0%) would ever make the Billboard 100. While not particularly insightful for our prediction objectives, this model yielded some valuable information on which factors play and important role in determining whether a song will become popular. It identified "artist.hottness" and "familiarity" as relevant variables in determining a song's ability to top the charts. 
+The random forest yielded marginally improved specificity and accuracy values of 100% and 98% respectively. Sensitivity within this model however continued to decline, as our random forest predicted that no songs (0%) would ever make the Billboard 100. While not particularly insightful for our prediction objectives, this model yielded some valuable information on which factors play and important role in determining whether a song will become popular. It identified "artist.hotttnesss" and "familiarity" as relevant variables in determining a song's ability to top the charts. 
 
 * **Lasso Regression:**
 
-Next, we turned to the Lasso regression, using it as a proxy for the ridge regression, a more precise but time-consuming technique. We faced similar challenges to its sensitivity as our classification trees and random forest. It had a specificity of 100%, sensitivity of 0% and accuracy of 97.9%, prompting us to look further into solutions for dealing with unbalanced data. 
+Next, we turned to the Lasso regression, using it as a proxy for the ridge regression, a more precise but time-consuming technique. We faced similar challenges to its sensitivity as our classification trees and random forest. It had a specificity of 98%, sensitivity of 0% and accuracy of 97.9%, prompting us to look further into solutions for dealing with unbalanced data. 
 
 * **Random Forest using SMOTE sampling:** 
 
