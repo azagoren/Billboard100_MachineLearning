@@ -15,9 +15,9 @@ We have listed below the four machine learning techniques implemented within thi
 
 While our classification tree was able to correctly predict when a song would not make the charts 97.7% of the time, its low sensitivity values (16.7%) were a cause for concern. Since our project is more interested in predicting when a song will be successful, we chose to pursue other models in an effort to achieve better sensitivity results. 
 
-* **Lasso Regression:**
+* **LASSO Regression:**
 
-Next, we turned to the Lasso regression, hoping to take best advatage of its feature selection capabilities and to determine if overfitting problem experienced with our decision tree results was attributable to overfitting. We faced similar challenges to its sensitivity as our classification trees and random forest. It had a specificity of 98%, sensitivity of 0% and accuracy of 97.9%, prompting us to look further into solutions for dealing with unbalanced data. 
+Next, we turned to the LASSO regression, hoping to take best advatage of its feature selection capabilities and to determine if overfitting problem experienced with our decision tree results was attributable to overfitting. We faced similar challenges to its sensitivity as our classification trees and random forest. It had a specificity of 98%, sensitivity of 0% and accuracy of 97.9%, prompting us to look further into solutions for dealing with unbalanced data. 
 
 * **Random Forest:**
 
