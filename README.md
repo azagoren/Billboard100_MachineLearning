@@ -20,6 +20,7 @@ While our classification tree was able to correctly predict when a song would no
 Next, we turned to the Lasso regression, hoping to take best advatage of its feature selection capabilities and to determine if overfitting problem experienced with our decision tree results was attributable to overfitting. We faced similar challenges to its sensitivity as our classification trees and random forest. It had a specificity of 98%, sensitivity of 0% and accuracy of 97.9%, prompting us to look further into solutions for dealing with unbalanced data. 
 
 * **Random Forest:**
+
 The random forest yielded marginally improved specificity and accuracy values of 100% and 98% respectively. Sensitivity within this model however continued to decline, as our random forest predicted that no songs (0%) would ever make the Billboard 100. While not particularly insightful for our prediction objectives, this model yielded some valuable information regarding which factors play an important role in determining whether a song will become popular. It identified "artist.hotttnesss" and "familiarity" as relevant variables in determining a song's ability to top the charts. 
 
 * **Random Forest using SMOTE sampling:** 
